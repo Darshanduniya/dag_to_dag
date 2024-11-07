@@ -1,0 +1,44 @@
+from airflow import DAG
+from airflow.operators.dummy import DummyOperator
+from airflow.operators.python import PythonOperator
+from datetime import datetime, timedelta
+import time
+
+# Define the child DAG (another_dag)
+another_dag = DAG(
+    'another_dag',
+    default_args={
+        'start_date': datetime(2024, 11, 7),
+        'retries': 0
+    },
+    schedule_interval=None
+)
+
+# Task 1: A simple placeholder task
+task1 = DummyOperator(
+    task_id='task1',
+    dag=another_dag
+)
+
+# Task 2: A task that will fail intentionally
+def fail_task():
+    raise Exception("Intentional failure for testing purposes")
+
+task2 = PythonOperator(
+    task_id='task2',
+    python_callable=fail_task,
+    dag=another_dag
+)
+
+# Task 3: A task that will run for 2 minutes
+def long_running_task():
+    time.sleep(120)  # Sleep for 120 seconds (2 minutes)
+
+task3 = PythonOperator(
+    task_id='task3',
+    python_callable=long_running_task,
+    dag=another_dag
+)
+
+# Define task dependencies
+task1 >> task2 >> task3
